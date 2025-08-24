@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasación de Inmuebles</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Login -->
+  <div id="login">
+    <h2>Iniciar Sesión</h2>
+    <input type="email" id="email" placeholder="Correo">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="btnLogin">Entrar</button>
+    <p id="msg"></p>
+  </div>
+
+  <!-- App principal -->
+  <div id="app" style="display:none;">
+    <div class="container">
+      <h1>Tasación de Inmuebles en Lima</h1>
+      <form id="calc">
+        <div class="form-group">
+          <label for="distrito">Distrito:</label>
+          <select id="distrito" required>
+            <option value="">Selecciona un distrito</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="zona">Zona:</label>
+          <select id="zona" required>
+            <option value="">Selecciona una zona</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tipo">Tipo de inmueble:</label>
+          <select id="tipo" required>
+            <option value="">Selecciona tipo de inmueble</option>
+            <option value="Departamento">Departamento</option>
+            <option value="Casa">Casa</option>
+            <option value="Terreno">Terreno</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="areaTechada">Área techada (m²):</label>
+          <input type="number" id="areaTechada" placeholder="Ej: 150" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label for="areaLibre">Área libre (m²):</label>
+          <input type="number" id="areaLibre" placeholder="Ej: 65" min="0" value="0">
+        </div>
+
+        <div class="form-group">
+          <label for="dorms">Dormitorios:</label>
+          <input type="number" id="dorms" placeholder="Ej: 4" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label for="baths">Baños:</label>
+          <input type="number" id="baths" placeholder="Ej: 2" min="1" required>
+        </div>
+
+        <div class="form-group" id="piso-group">
+          <label for="piso">Piso:</label>
+          <input type="number" id="piso" placeholder="Ej: 5" min="1" value="1">
+        </div>
+
+        <div class="form-group" id="ascensor-group">
+          <label for="ascensor">Ascensor:</label>
+          <select id="ascensor">
+            <option value="con">Con ascensor</option>
+            <option value="sin">Sin ascensor</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="antiguedad">Antigüedad (años):</label>
+          <input type="number" id="antiguedad" placeholder="Ej: 40" min="0" required>
+        </div>
+
+        <div class="form-group">
+          <label for="eficienciaEnergetica">Eficiencia energética:</label>
+          <select id="eficienciaEnergetica" required>
+            <option value="A">A (Muy eficiente)</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F (Poco eficiente)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="estadoConservacion">Estado de conservación:</label>
+          <select id="estadoConservacion" required>
+            <option value="excelente">Excelente</option>
+            <option value="bueno">Bueno</option>
+            <option value="regular">Regular</option>
+            <option value="remodelar">Necesita remodelar</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="currency">Moneda:</label>
+          <select id="currency" required>
+            <option value="PEN">Soles (S/)</option>
+            <option value="USD">Dólares (USD)</option>
+          </select>
+        </div>
+
+        <button type="submit">Calcular Tasación</button>
+      </form>
+
+      <div class="results">
+        <h2 id="summary">Resultados</h2>
+        <div class="result-item">
+          <span>Valor mínimo:</span>
+          <span id="valMin">-</span>
+        </div>
+        <div class="result-item">
+          <span>Valor medio:</span>
+          <span id="valMed">-</span>
+        </div>
+        <div class="result-item">
+          <span>Valor máximo:</span>
+          <span id="valMax">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+  <!-- 🔑 Firebase inicialización + login + candado -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } 
+      from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } 
+      from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    // Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0tXPI-VDw_7Wwts67qjvD4fCrZnBILjY",
+      authDomain: "candado-a-tasacion.firebaseapp.com",
+      projectId: "candado-a-tasacion",
+      storageBucket: "candado-a-tasacion.firebasestorage.app",
+      messagingSenderId: "863779291437",
+      appId: "1:863779291437:web:bf41829aa3491b8d89d3a4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Iniciar sesión
+    document.getElementById("btnLogin").onclick = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        document.getElementById("msg").textContent = "❌ Error: " + error.message;
+      }
+    };
+
+    // Validar estado del cliente
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const snap = await getDoc(doc(db, "clients", user.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          const expired = data.expiresAt && data.expiresAt.toMillis() < Date.now();
+          if (data.active && !expired) {
+            document.getElementById("login").style.display = "none";
+            document.getElementById("app").style.display = "block";
+            return;
+          }
+        }
+        document.getElementById("msg").textContent = "⚠️ Tu acceso está bloqueado o vencido.";
+        auth.signOut();
+      } else {
+        document.getElementById("login").style.display = "block";
+        document.getElementById("app").style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
